@@ -15,6 +15,9 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
 
+from vasagent.ktv import predict_ktv_from_text
+from vasagent.qa import answer_query
+
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -61,6 +64,7 @@ if uploaded_file:
 
     loader = PyPDFLoader(tmp_path)
     docs = loader.load()
+    full_text = " ".join(d.page_content for d in docs)
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     chunks = splitter.split_documents(docs)
@@ -80,13 +84,22 @@ Question: {input}
 """
     )
 
-    document_chain = create_stuff_documents_chain(ChatOpenAI(api_key=OPENAI_API_KEY), prompt)
+    document_chain = create_stuff_documents_chain(
+        ChatOpenAI(api_key=OPENAI_API_KEY), prompt
+    )
     retriever = vectors.as_retriever()
     qa_chain = create_retrieval_chain(retriever, document_chain)
 
+    if st.sidebar.button("Predict Kt/V"):
+        try:
+            result = predict_ktv_from_text(full_text, api_key=OPENAI_API_KEY)
+            st.sidebar.write(f"Predicted Kt/V: {result}")
+        except Exception as e:  # pragma: no cover - user feedback
+            st.sidebar.write(f"Could not predict Kt/V: {e}")
+
     user_query = st.chat_input("Ask a question:")
     if user_query:
-        result = qa_chain.invoke({"input": user_query})
-        st.write(result.get("answer"))
+        response = answer_query(user_query, full_text, qa_chain, api_key=OPENAI_API_KEY)
+        st.write(response)
 else:
     st.write("Please upload a PDF to begin.")

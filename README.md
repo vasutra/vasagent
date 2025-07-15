@@ -33,7 +33,12 @@ You can now add your own AGENTIC AI code inside the `src/` directory.
 The `rag_app.py` module provides a basic retrieval-augmented generation (RAG) demo.
 It loads a PDF, chunks the content, creates embeddings with OpenAI's
 `text-embedding-3-small` model and stores them in a FAISS index. A simple
-Streamlit UI lets you ask questions about the uploaded document.
+Streamlit UI lets you ask questions about the uploaded document. If the PDF
+contains laboratory values for **BUN** and **Creatinine**, you can press the
+sidebar "Predict Kt/V" button or simply ask for a Kt/V prediction in the chat
+itself. The app then calls a tool that multiplies the lab values. When the labs
+are not found directly in the text, and an OpenAI API key is available, the app
+falls back to a small agent that asks ChatGPT to extract the values.
 
 Run the demo with:
 
