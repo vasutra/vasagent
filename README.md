@@ -23,3 +23,17 @@ This repository provides a basic Poetry environment for developing AGENTIC AI pr
    ```
 
 You can now add your own AGENTIC AI code inside the `src/` directory.
+
+## Document QA ChatBot
+
+The `rag_app.py` module provides a basic retrieval-augmented generation (RAG) demo.
+It loads a PDF, chunks the content, creates embeddings with OpenAI's
+`text-embedding-3-small` model and stores them in a FAISS index. A simple
+Streamlit UI lets you ask questions about the uploaded document.
+
+Run the demo with:
+
+```bash
+streamlit run src/vasagent/rag_app.py
+```
+
