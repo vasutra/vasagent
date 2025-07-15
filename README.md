@@ -17,7 +17,8 @@ This repository provides a basic Poetry environment for developing AGENTIC AI pr
    ```
 
    This installs all required packages, including the `langchain-community`
-   extension used for document loaders.
+   extension used for document loaders and the `tiktoken` package needed for
+   OpenAI embeddings.
 
 3. Activate the virtual environment:
 
