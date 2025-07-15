@@ -11,6 +11,7 @@ from vasagent.ktv import (
     predict_ktv,
     predict_ktv_from_text,
 )
+from vasagent.qa import answer_query
 
 
 def test_predict_ktv():
@@ -81,3 +82,31 @@ def test_predict_ktv_from_text_agent(monkeypatch):
     monkeypatch.setattr("vasagent.mcp_agent.MCPAgent", MCPAgent)
     result = predict_ktv_from_text("no labs", api_key="key")
     assert result == 4.0
+
+class DummyChain:
+    def __init__(self):
+        self.invocations = []
+    def invoke(self, args):
+        self.invocations.append(args)
+        return {"answer": "A"}
+
+def test_answer_query_predict(monkeypatch):
+    chain = DummyChain()
+    def dummy_predict(text, api_key=None):
+        assert text == "BUN: 2 Creatinine: 2"
+        assert api_key == "key"
+        return 4.0
+    monkeypatch.setattr("vasagent.qa.predict_ktv_from_text", dummy_predict)
+    result = answer_query("Predict KtV", "BUN: 2 Creatinine: 2", chain, api_key="key")
+    assert result == "Predicted Kt/V: 4.0"
+    assert chain.invocations == []
+
+
+def test_answer_query_other(monkeypatch):
+    chain = DummyChain()
+    def dummy_predict(*args, **kwargs):
+        raise AssertionError("should not call")
+    monkeypatch.setattr("vasagent.qa.predict_ktv_from_text", dummy_predict)
+    result = answer_query("What is BUN", "text", chain)
+    assert result == "A"
+    assert chain.invocations == [{"input": "What is BUN"}]

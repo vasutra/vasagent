@@ -16,6 +16,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
 
 from vasagent.ktv import predict_ktv_from_text
+from vasagent.qa import answer_query
 
 
 load_dotenv()
@@ -98,7 +99,7 @@ Question: {input}
 
     user_query = st.chat_input("Ask a question:")
     if user_query:
-        result = qa_chain.invoke({"input": user_query})
-        st.write(result.get("answer"))
+        response = answer_query(user_query, full_text, qa_chain, api_key=OPENAI_API_KEY)
+        st.write(response)
 else:
     st.write("Please upload a PDF to begin.")
