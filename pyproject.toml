@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "vasagent"
+version = "0.1.0"
+description = "A basic Poetry environment for AGENTIC AI projects"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+openai = "*"
+pydantic = "*"
+requests = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
