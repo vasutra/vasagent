@@ -34,3 +34,34 @@ def test_main_predict(tmp_path: Path):
         env=env,
     )
     assert "Predicted Kt/V: 15" in result.stdout
+
+from vasagent import mcp_agent
+from vasagent.mcp_agent import MCPAgent
+
+class DummyCompletions:
+    @staticmethod
+    def create(model=None, messages=None):
+        class _Msg:
+            def __init__(self, content):
+                self.content = content
+        class _Choice:
+            def __init__(self, content):
+                self.message = _Msg(content)
+        class _Resp:
+            def __init__(self, content):
+                self.choices = [_Choice(content)]
+        return _Resp("BUN: 4 Creatinine: 1")
+
+class DummyChat:
+    completions = DummyCompletions()
+
+class DummyOpenAI:
+    def __init__(self, *args, **kwargs):
+        self.chat = DummyChat()
+
+
+def test_mcp_agent(monkeypatch):
+    monkeypatch.setattr(mcp_agent, "OpenAI", DummyOpenAI)
+    agent = MCPAgent(api_key="test")
+    result = agent.predict("Sample report")
+    assert result == 4.0
