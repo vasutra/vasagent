@@ -9,6 +9,11 @@ python = "^3.11"
 openai = "*"
 pydantic = "*"
 requests = "*"
+streamlit = "*"
+python-dotenv = "*"
+langchain = "*"
+faiss-cpu = "*"
+pypdf = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
