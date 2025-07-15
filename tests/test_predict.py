@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from vasagent.ktv import extract_lab_values, predict_ktv
+from vasagent.ktv import (
+    extract_lab_values,
+    predict_ktv,
+    predict_ktv_from_text,
+)
 
 
 def test_predict_ktv():
@@ -16,6 +20,11 @@ def test_predict_ktv():
 def test_extract_lab_values():
     text = "BUN: 8 Creatinine: 1.2"
     assert extract_lab_values(text) == (8.0, 1.2)
+
+
+def test_predict_ktv_from_text_direct():
+    text = "BUN: 3 Creatinine: 2"
+    assert predict_ktv_from_text(text) == 6
 
 
 def test_main_predict(tmp_path: Path):
@@ -64,4 +73,11 @@ def test_mcp_agent(monkeypatch):
     monkeypatch.setattr(mcp_agent, "OpenAI", DummyOpenAI)
     agent = MCPAgent(api_key="test")
     result = agent.predict("Sample report")
+    assert result == 4.0
+
+
+def test_predict_ktv_from_text_agent(monkeypatch):
+    monkeypatch.setattr(mcp_agent, "OpenAI", DummyOpenAI)
+    monkeypatch.setattr("vasagent.mcp_agent.MCPAgent", MCPAgent)
+    result = predict_ktv_from_text("no labs", api_key="key")
     assert result == 4.0

@@ -38,3 +38,25 @@ def extract_lab_values(text: str) -> Tuple[Optional[float], Optional[float]]:
             pass
 
     return bun, creatinine
+
+
+def predict_ktv_from_text(text: str, api_key: str | None = None) -> float:
+    """Return predicted Kt/V from free-form report text.
+
+    The function first attempts to parse BUN and Creatinine values using
+    :func:`extract_lab_values`. If either value is missing and ``api_key`` is
+    provided, it falls back to :class:`~vasagent.mcp_agent.MCPAgent` which uses
+    ChatGPT to identify the lab values.
+    """
+
+    bun, creatinine = extract_lab_values(text)
+    if bun is not None and creatinine is not None:
+        return predict_ktv(bun, creatinine)
+
+    if api_key is None:
+        raise ValueError("BUN and Creatinine not found in text")
+
+    from vasagent.mcp_agent import MCPAgent
+
+    agent = MCPAgent(api_key=api_key)
+    return agent.predict(text)

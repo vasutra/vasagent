@@ -15,7 +15,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
 
-from vasagent.ktv import extract_lab_values, predict_ktv
+from vasagent.ktv import predict_ktv_from_text
 
 
 load_dotenv()
@@ -64,7 +64,6 @@ if uploaded_file:
     loader = PyPDFLoader(tmp_path)
     docs = loader.load()
     full_text = " ".join(d.page_content for d in docs)
-    bun, creatinine = extract_lab_values(full_text)
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     chunks = splitter.split_documents(docs)
@@ -91,11 +90,11 @@ Question: {input}
     qa_chain = create_retrieval_chain(retriever, document_chain)
 
     if st.sidebar.button("Predict Kt/V"):
-        if bun is not None and creatinine is not None:
-            result = predict_ktv(bun, creatinine)
+        try:
+            result = predict_ktv_from_text(full_text, api_key=OPENAI_API_KEY)
             st.sidebar.write(f"Predicted Kt/V: {result}")
-        else:
-            st.sidebar.write("BUN and Creatinine not found in report.")
+        except Exception as e:  # pragma: no cover - user feedback
+            st.sidebar.write(f"Could not predict Kt/V: {e}")
 
     user_query = st.chat_input("Ask a question:")
     if user_query:
