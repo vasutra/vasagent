@@ -5,26 +5,15 @@ import tempfile
 import streamlit as st
 from dotenv import load_dotenv
 
-try:
-    import openai
-    from langchain.document_loaders import PyPDFLoader
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-    from langchain.embeddings import OpenAIEmbeddings
-    from langchain.vectorstores import FAISS
-    from langchain.chains import create_retrieval_chain
-    from langchain.chains.combine_documents import create_stuff_documents_chain
-    from langchain.prompts import ChatPromptTemplate
-    from langchain.chat_models import ChatOpenAI
-except Exception as e:  # pragma: no cover - optional dependencies
-    openai = None
-    PyPDFLoader = None
-    RecursiveCharacterTextSplitter = None
-    OpenAIEmbeddings = None
-    FAISS = None
-    create_retrieval_chain = None
-    create_stuff_documents_chain = None
-    ChatPromptTemplate = None
-    ChatOpenAI = None
+from openai import OpenAI
+from langchain.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.prompts import ChatPromptTemplate
+from langchain.chat_models import ChatOpenAI
 
 
 load_dotenv()
@@ -33,19 +22,16 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def run_test_prompt():
     """Run a basic OpenAI chat completion call to verify API access."""
-    if openai is None:
-        return "openai package not available"
-
     if not OPENAI_API_KEY:
         return "OPENAI_API_KEY not set"
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "Hello"}],
-            api_key=OPENAI_API_KEY,
         )
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
     except Exception as e:  # pragma: no cover - network or auth errors
         return f"Error calling OpenAI API: {e}"
 
@@ -68,7 +54,7 @@ if st.sidebar.button("Test OpenAI API"):
 
 uploaded_file = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
 
-if uploaded_file and PyPDFLoader is not None:
+if uploaded_file:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(uploaded_file.read())
         tmp_path = tmp.name
