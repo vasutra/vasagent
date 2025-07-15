@@ -21,11 +21,15 @@ def main() -> None:
         with open(args.report, "r", encoding="utf-8") as f:
             report = json.load(f)
         if args.predict:
-            if "BUN" in report and "Creatinine" in report:
-                result = predict_ktv(report["BUN"], report["Creatinine"])
+            bun = report.get("BUN")
+            creatinine = report.get("Creatinine")
+            if bun is not None and creatinine is not None:
+                result = predict_ktv(bun, creatinine)
                 print(f"Predicted Kt/V: {result}")
             else:
-                print("Prediction requested but BUN and Creatinine not found in report.")
+                print(
+                    "Prediction requested but BUN and Creatinine not found in report."
+                )
     else:
         if args.predict:
             print("No report provided.")

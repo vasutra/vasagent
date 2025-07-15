@@ -6,11 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from vasagent.ktv import predict_ktv
+from vasagent.ktv import extract_lab_values, predict_ktv
 
 
 def test_predict_ktv():
     assert predict_ktv(10, 2) == 20
+
+
+def test_extract_lab_values():
+    text = "BUN: 8 Creatinine: 1.2"
+    assert extract_lab_values(text) == (8.0, 1.2)
 
 
 def test_main_predict(tmp_path: Path):
