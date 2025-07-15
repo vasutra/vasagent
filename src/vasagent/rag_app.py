@@ -1,6 +1,7 @@
 # Streamlit RAG application
 import os
 import tempfile
+import json
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -36,6 +37,32 @@ def run_test_prompt():
         return f"Error calling OpenAI API: {e}"
 
 
+def extract_lab_values(text: str):
+    """Use a chat completion to extract Urea and Creatinine values from text."""
+    if not OPENAI_API_KEY:
+        return None, None
+    system = (
+        "Extract numeric values for Urea and Creatinine from the given text. "
+        "Respond only with JSON in the form {\"urea\": <value or null>, \"creatinine\": <value or null>}"
+    )
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": text},
+            ],
+            temperature=0,
+        )
+        data = json.loads(response.choices[0].message.content)
+        urea = float(data["urea"]) if data.get("urea") is not None else None
+        creat = float(data["creatinine"]) if data.get("creatinine") is not None else None
+        return urea, creat
+    except Exception:  # pragma: no cover - network or auth errors
+        return None, None
+
+
 st.set_page_config(
     page_title="Document QA ChatBot",
     page_icon=":robot_face:",
@@ -62,6 +89,11 @@ if uploaded_file:
     loader = PyPDFLoader(tmp_path)
     docs = loader.load()
 
+    # Ask the model for Urea and Creatinine values in the PDF text
+    text_content = " ".join(doc.page_content for doc in docs)
+    urea_val, creat_val = extract_lab_values(text_content)
+    enable_ktv = urea_val is not None and creat_val is not None
+
     splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     chunks = splitter.split_documents(docs)
 
@@ -83,6 +115,12 @@ Question: {input}
     document_chain = create_stuff_documents_chain(ChatOpenAI(api_key=OPENAI_API_KEY), prompt)
     retriever = vectors.as_retriever()
     qa_chain = create_retrieval_chain(retriever, document_chain)
+
+    if enable_ktv:
+        if st.sidebar.button("Predict Kt/V"):
+            st.sidebar.write(f"Kt/V: {urea_val * creat_val}")
+    else:
+        st.sidebar.button("Predict Kt/V", disabled=True)
 
     user_query = st.chat_input("Ask a question:")
     if user_query:
