@@ -2,6 +2,7 @@
 import os
 import tempfile
 import json
+import re
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -41,10 +42,12 @@ def extract_lab_values(text: str):
     """Use a chat completion to extract Urea and Creatinine values from text."""
     if not OPENAI_API_KEY:
         return None, None
+
     system = (
         "Extract numeric values for Urea and Creatinine from the given text. "
         "Respond only with JSON in the form {\"urea\": <value or null>, \"creatinine\": <value or null>}"
     )
+
     try:
         client = OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
@@ -55,7 +58,14 @@ def extract_lab_values(text: str):
             ],
             temperature=0,
         )
-        data = json.loads(response.choices[0].message.content)
+
+        # The model may wrap JSON in a code block, e.g. ```json ... ```
+        raw_content = response.choices[0].message.content.strip()
+        match = re.search(r"\{.*\}", raw_content, re.DOTALL)
+        if not match:
+            return None, None
+        data = json.loads(match.group())
+
         urea = float(data["urea"]) if data.get("urea") is not None else None
         creat = float(data["creatinine"]) if data.get("creatinine") is not None else None
         return urea, creat
