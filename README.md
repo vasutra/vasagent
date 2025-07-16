@@ -30,14 +30,15 @@ You can now add your own AGENTIC AI code inside the `src/` directory.
 
 ## Document QA ChatBot
 
-The `rag_app.py` module provides a basic retrieval-augmented generation (RAG) demo.
-It loads a PDF, chunks the content, creates embeddings with OpenAI's
-`text-embedding-3-small` model and stores them in a FAISS index. A simple
-Streamlit UI lets you ask questions about the uploaded document.
+The app includes a basic retrieval-augmented generation (RAG) demo located in
+`src/pages/document_qa.py`. It loads a PDF, chunks the content, creates
+embeddings with OpenAI's `text-embedding-3-small` model and stores them in a
+FAISS index. A simple Streamlit UI lets you ask questions about the uploaded
+document.
 
 Run the demo with:
 
 ```bash
-streamlit run src/rag_app.py
+streamlit run src/app.py
 ```
 

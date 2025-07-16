@@ -1,4 +1,5 @@
-# Streamlit RAG application
+"""Document QA chatbot page."""
+
 import os
 import tempfile
 import json
@@ -16,12 +17,11 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
 
-
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
-def run_test_prompt():
+def run_test_prompt() -> str:
     """Run a basic OpenAI chat completion call to verify API access."""
     if not OPENAI_API_KEY:
         return "OPENAI_API_KEY not set"
@@ -63,45 +63,40 @@ def extract_lab_values(text: str):
         return None, None
 
 
-st.set_page_config(
-    page_title="Document QA ChatBot",
-    page_icon=":robot_face:",
-    layout="centered",
-)
+def show() -> None:
+    """Display the Document QA chatbot page."""
+    st.title("Document QA ChatBot")
 
-st.title("Document QA ChatBot")
+    st.sidebar.write(
+        "Upload a PDF and ask questions. Embeddings are created with"
+        " OpenAI 'text-embedding-3-small' and stored in a local FAISS index."
+    )
 
-st.sidebar.write(
-    "Upload a PDF and ask questions. Embeddings are created with"
-    " OpenAI 'text-embedding-3-small' and stored in a local FAISS index."
-)
+    if st.sidebar.button("Test OpenAI API"):
+        st.sidebar.write(run_test_prompt())
 
-if st.sidebar.button("Test OpenAI API"):
-    st.sidebar.write(run_test_prompt())
+    uploaded_file = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
 
-uploaded_file = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
+    if uploaded_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
 
-if uploaded_file:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(uploaded_file.read())
-        tmp_path = tmp.name
+        loader = PyPDFLoader(tmp_path)
+        docs = loader.load()
 
-    loader = PyPDFLoader(tmp_path)
-    docs = loader.load()
+        text_content = " ".join(doc.page_content for doc in docs)
+        urea_val, creat_val = extract_lab_values(text_content)
+        enable_ktv = urea_val is not None and creat_val is not None
 
-    # Ask the model for Urea and Creatinine values in the PDF text
-    text_content = " ".join(doc.page_content for doc in docs)
-    urea_val, creat_val = extract_lab_values(text_content)
-    enable_ktv = urea_val is not None and creat_val is not None
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+        chunks = splitter.split_documents(docs)
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
-    chunks = splitter.split_documents(docs)
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=OPENAI_API_KEY)
+        vectors = FAISS.from_documents(chunks, embeddings)
 
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=OPENAI_API_KEY)
-    vectors = FAISS.from_documents(chunks, embeddings)
-
-    prompt = ChatPromptTemplate.from_template(
-        """
+        prompt = ChatPromptTemplate.from_template(
+            """
 Answer the questions based on the provided text only. If the answer is not
 contained in the text, say so.
 
@@ -110,21 +105,21 @@ contained in the text, say so.
 </context>
 Question: {input}
 """
-    )
+        )
 
-    document_chain = create_stuff_documents_chain(ChatOpenAI(api_key=OPENAI_API_KEY), prompt)
-    retriever = vectors.as_retriever()
-    qa_chain = create_retrieval_chain(retriever, document_chain)
+        document_chain = create_stuff_documents_chain(ChatOpenAI(api_key=OPENAI_API_KEY), prompt)
+        retriever = vectors.as_retriever()
+        qa_chain = create_retrieval_chain(retriever, document_chain)
 
-    if enable_ktv:
-        if st.sidebar.button("Predict Kt/V"):
-            st.sidebar.write(f"Kt/V: {urea_val * creat_val}")
+        if enable_ktv:
+            if st.sidebar.button("Predict Kt/V"):
+                st.sidebar.write(f"Kt/V: {urea_val * creat_val}")
+        else:
+            st.sidebar.button("Predict Kt/V", disabled=True)
+
+        user_query = st.chat_input("Ask a question:")
+        if user_query:
+            result = qa_chain.invoke({"input": user_query})
+            st.write(result.get("answer"))
     else:
-        st.sidebar.button("Predict Kt/V", disabled=True)
-
-    user_query = st.chat_input("Ask a question:")
-    if user_query:
-        result = qa_chain.invoke({"input": user_query})
-        st.write(result.get("answer"))
-else:
-    st.write("Please upload a PDF to begin.")
+        st.write("Please upload a PDF to begin.")
