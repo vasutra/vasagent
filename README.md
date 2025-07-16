@@ -38,6 +38,6 @@ Streamlit UI lets you ask questions about the uploaded document.
 Run the demo with:
 
 ```bash
-streamlit run src/vasagent/rag_app.py
+streamlit run src/rag_app.py
 ```
 

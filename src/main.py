@@ -1,4 +1,4 @@
-from . import hello
+from __init__ import hello
 
 def main():
     print(hello())
